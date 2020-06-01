@@ -1,0 +1,440 @@
+type: edu
+custom_name: stage6
+files:
+- name: test/EncryptDecryptTest.java
+  visible: false
+  text: |
+    import encryptdecrypt.Main;
+    import org.hyperskill.hstest.common.FileUtils;
+    import org.hyperskill.hstest.stage.StageTest;
+    import org.hyperskill.hstest.testcase.CheckResult;
+    import org.hyperskill.hstest.testcase.TestCase;
+
+    import java.io.IOException;
+    import java.nio.charset.StandardCharsets;
+    import java.nio.file.Files;
+    import java.nio.file.NoSuchFileException;
+    import java.nio.file.Path;
+    import java.nio.file.Paths;
+    import java.util.List;
+
+    public class EncryptDecryptTest extends StageTest<String> {
+        public EncryptDecryptTest() {
+            super(Main.class);
+        }
+
+        @Override
+        public List<TestCase<String>> generate() {
+            return List.of(
+                new TestCase<String>()
+                    .addArguments(
+                        "-alg", "unicode",
+                        "-mode", "enc",
+                        "-key", "5",
+                        "-in", "in.txt",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("\\jqhtrj%yt%m~ujwxpnqq&")
+                    .addFile("in.txt", "Welcome to hyperskill!"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-key", "0",
+                        "-mode", "enc",
+                        "-alg", "unicode",
+                        "-in", "input.txt",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("Hello")
+                    .addFile("input.txt", "Hello"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-key", "1",
+                        "-in", "i.txt",
+                        "-alg", "unicode",
+                        "-out", "output.txt",
+                        "-mode", "enc"
+                    )
+                    .setAttach("123456789")
+                    .addFile("i.txt", "012345678"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "dec",
+                        "-in", "input.txt",
+                        "-out", "output.txt",
+                        "-alg", "unicode",
+                        "-key", "5"
+                    )
+                    .setAttach("Welcome to hyperskill!")
+                    .addFile("input.txt", "\\jqhtrj%yt%m~ujwxpnqq&"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "dec",
+                        "-alg", "unicode",
+                        "-key", "0",
+                        "-in", "input.txt",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("Hi")
+                    .addFile("input.txt", "Hi"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "dec",
+                        "-key", "1",
+                        "-in", "input.txt",
+                        "-alg", "unicode",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("111122223333")
+                    .addFile("input.txt", "222233334444"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "enc",
+                        "-key", "5",
+                        "-in", "input.txt",
+                        "-alg", "shift",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("bjqhtrj yt mdujwxpnqq")
+                    .addFile("input.txt", "welcome to hyperskill"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "dec",
+                        "-key", "10",
+                        "-in", "input.txt",
+                        "-alg", "shift",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("treasure")
+                    .addFile("input.txt", "dbokcebo"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "enc",
+                        "-key", "12",
+                        "-in", "input.txt",
+                        "-alg", "shift",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("cphpchdjcijdjibhdjebhjucspucmdmudbnuccup")
+                    .addFile("input.txt", "qdvdqvrxqwxrxwpvrxspvxiqgdiqarairpbiqqid"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "dec",
+                        "-key", "10",
+                        "-in", "input.txt",
+                        "-alg", "shift",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("y")
+                    .addFile("input.txt", "i"),
+
+                new TestCase<String>()
+                    .addArguments(
+                        "-mode", "enc",
+                        "-key", "10",
+                        "-in", "input.txt",
+                        "-alg", "shift",
+                        "-out", "output.txt"
+                    )
+                    .setAttach("i")
+                    .addFile("input.txt", "y")
+            );
+        }
+
+        @Override
+        public CheckResult check(String reply, String clue) {
+            String fileName = "output.txt";
+            String output;
+
+            try {
+                Path path = Paths.get(FileUtils.CURRENT_DIR + fileName);
+                output = Files.readString(path, StandardCharsets.UTF_8);
+            } catch (NoSuchFileException e) {
+                return new CheckResult(false, "File output.txt not found!");
+            } catch (IOException e) {
+                return new CheckResult(false, "Cannot read from file!");
+            }
+
+            if (!output.trim().equals(clue.trim())) {
+                return new CheckResult(false, "Wrong result in the file!");
+            }
+
+            return new CheckResult(true);
+        }
+
+    }
+  learner_created: false
+- name: src/encryptdecrypt/Main.java
+  visible: true
+  text: |-
+    package encryptdecrypt;
+
+    import java.io.*;
+    import java.nio.charset.Charset;
+    import java.nio.file.*;
+
+    public class Main {
+        public static final String DEFAULT_MODE = "enc";
+        public static final int DEFAULT_KEY = 0;
+        public static final String DEFAULT_DATA = "";
+
+        private static String mode  = DEFAULT_MODE;
+        private static int key = DEFAULT_KEY;
+        private static String data = DEFAULT_DATA;
+        private static boolean dataPresent = false;
+        private static boolean inPresent = false;
+        private static boolean outPresent = false;
+        private static String inPath = null;
+        private static String outPath = null;
+
+
+
+        public static void main(String[] args) {
+
+            parseInput(args);
+
+            if(inPresent && !dataPresent) {
+                writeFile();
+            }
+            else {
+                writeData();
+            }
+        }
+
+        private static void writeData() {
+            if(outPresent) {
+                Path path = Paths.get(outPath);
+
+                try(Writer writer = Files.newBufferedWriter(path, Charset.forName("UTF-8"), StandardOpenOption.APPEND)) {
+                    transferDataToFile(data, writer, mode, key);
+                }
+                catch (IOException e) {
+                    System.out.println("Can't open the output file");
+                }
+            }
+            else {
+                transferDataToConsole(data, mode, key);
+            }
+        }
+
+        private static void writeFile() {
+            Path in = Paths.get(inPath);
+            if(outPresent) {
+                Path out = Paths.get(outPath);
+
+                try(Reader reader = Files.newBufferedReader(in, Charset.forName("UTF-8"));
+                    Writer writer = Files.newBufferedWriter(out, Charset.forName("UTF-8"))) {
+                    transferDataToFile(reader, writer, mode, key);
+                }
+                catch (IOException e) {
+                    System.out.println("Can't open the out or in file");
+                }
+            }
+            else {
+                try (Reader reader = Files.newBufferedReader(in, Charset.forName("UTF-8"))) {
+                    transferDataToConsole(reader, mode, key);
+                }
+                catch (IOException e) {
+                    System.out.println("Can't open the in file");
+                }
+            }
+        }
+
+
+        private static void transferDataToFile(String in, Writer writer, String mode, int key)throws IOException {
+            char[] chars = in.toCharArray();
+
+            if(mode.equals("dec")) {
+                for(int i = 0; i < chars.length; i++) {
+                    writer.write(decryptChar(chars[i], key));
+                }
+            }
+            else {
+                for(int i = 0; i < chars.length; i++) {
+                    writer.write(encryptChar(chars[i], key));
+                }
+            }
+        }
+
+        private static void transferDataToFile(Reader reader, Writer writer, String mode, int key) throws IOException {
+
+            int intChar = reader.read();
+
+            try {
+                if (mode.equals("dec")) {
+                    while(intChar != -1) {
+                        writer.write(decryptChar((char) intChar, key));
+                        intChar = reader.read();
+                    }
+                }
+                else {
+                    while(intChar != -1) {
+                        writer.write(encryptChar((char)intChar, key));
+                        intChar = reader.read();
+                    }
+                }
+            } catch (IOException e) {
+                throw new IOException("transferDataToFile merhod error");
+            }
+
+
+        }
+
+        private static void transferDataToConsole(String data, String mode, int key) {
+            char[] chars = data.toCharArray();
+
+            if(mode.equals("dec")) {
+                for(int i = 0; i < chars.length; i++) {
+                    System.out.print(decryptChar(chars[i], key));
+                }
+            }
+            else {
+                for(int i = 0; i < chars.length; i++) {
+                    System.out.print(encryptChar(chars[i], key));
+                }
+            }
+        }
+
+        private static void transferDataToConsole(Reader reader, String mode, int key) throws IOException{
+            System.out.println("transferDataToConsole");
+            int intChar = reader.read();
+
+            if (mode.equals("dec")) {
+                while(intChar != -1) {
+                    System.out.print(decryptChar((char)intChar, key));
+                    intChar = reader.read();
+                }
+            }
+            else {
+                while(intChar != -1) {
+                    System.out.print(encryptChar((char)intChar, key));
+                    intChar = reader.read();
+                }
+            }
+        }
+
+        private static void parseInput(String[] args) {
+
+            int index = 0;
+
+            while (index < args.length) {
+                switch (args[index]) {
+                    case "-mode":
+                        mode = args[++index];
+                        if(!(mode.equals("enc") || mode.equals("dec"))) {
+                            throw new IllegalArgumentException("Error mode name");
+                        }
+                        System.out.println("Mode: " + mode);
+                        index++;
+                        break;
+                    case "-key":
+                        key = Integer.parseInt(args[++index]);
+                        System.out.println("Key: " + key);
+                        index++;
+                        break;
+                    case "-in":
+                        inPresent = true;
+                        inPath = args[++index];
+                        System.out.println("In: " + inPath);
+                        index++;
+                        break;
+                    case "-data":
+                        dataPresent = true;
+                        data = args[++index];
+                        System.out.println("DataPresent: " + dataPresent);
+                        System.out.println("DataP: " + data);
+                        index++;
+                        break;
+                    case "-out":
+                        outPresent = true;
+                        outPath = args[++index];
+                        System.out.println("Out: " + outPath);
+                        index++;
+                        break;
+                    default: {
+                        System.out.println("Parameter: " + args[index]);
+                        throw new IllegalArgumentException();
+                    }
+                }
+            }
+        }
+
+        public static String encrypt(String message, int key) {
+            char[] messageChars = message.toCharArray();
+            StringBuilder encryptedMessage = new StringBuilder();
+
+            for (int i = 0; i < messageChars.length; i++) {
+                encryptedMessage.append(encryptChar(messageChars[i], key));
+            }
+            return encryptedMessage.toString();
+        }
+
+        private static char encryptChar(char ch, int key) {
+            int intChar = ch;
+
+            if (ch + key > 127) {
+                intChar = (intChar + key) % 127;
+
+            } else {
+                intChar += key;
+            }
+            return (char) intChar;
+        }
+
+        public static String decrypt (String message,int key) {
+            char[] messageChars = message.toCharArray();
+            StringBuilder decryptedMessage = new StringBuilder();
+
+            for (int i = 0; i < messageChars.length; i++) {
+                decryptedMessage.append(decryptChar(messageChars[i], key));
+            }
+            return decryptedMessage.toString();
+        }
+
+        private static char decryptChar ( char ch, int key){
+            int intChar = ch;
+
+            if (intChar - key < 0) {
+                intChar -= (key % 127);
+            } else {
+                intChar -= key;
+            }
+            return (char) intChar;
+        }
+    }
+  learner_created: true
+- name: src/encryptdecrypt/algorithm/CharCryptoAlgorithmMode.java
+  visible: true
+  learner_created: true
+- name: src/encryptdecrypt/algorithm/AlphabetCharShift.java
+  visible: true
+  learner_created: true
+- name: src/encryptdecrypt/algorithm/UnicodeCharShift.java
+  visible: true
+  learner_created: true
+- name: src/encryptdecrypt/algorithm/CharCryptoAlgorithm.java
+  visible: true
+  learner_created: true
+- name: src/encryptdecrypt/algorithm/CharCryptoAlgorithmFactory.java
+  visible: true
+  learner_created: true
+- name: src/encryptdecrypt/algorithm/Algorithm.java
+  visible: true
+  learner_created: true
+- name: src/encryptdecrypt/data/CryptoData.java
+  visible: true
+  learner_created: true
+- name: src/encryptdecrypt/data/CryptoDataManager.java
+  visible: true
+  learner_created: true
+feedback_link: https://hyperskill.org/projects/46/stages/250/implement
+status: Solved
+record: 6
